@@ -22,6 +22,17 @@
           <google-cast-launcher></google-cast-launcher>
         </div>
 
+        <button>
+          <ui-tooltip text="Scan current library" direction="bottom" class="flex items-center" v-if="userIsAdminOrUp && !isScanning">
+            <span class="material-icons text-2xl" @click="scanBtnClick">refresh</span>
+          </ui-tooltip>
+          <div v-if="isScanning" class="text-xl text-gray-300 ml-3 animate-spin">
+            <svg viewBox="0 0 24 24" class="w-6 h-6">
+              <path fill="currentColor" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
+            </svg>
+          </div>
+        </button>
+
         <widgets-notification-widget class="hidden md:block" />
 
         <nuxt-link v-if="currentLibrary" to="/config/stats" class="hover:text-gray-200 cursor-pointer w-8 h-8 hidden sm:flex items-center justify-center mx-1">
@@ -93,6 +104,9 @@ export default {
   computed: {
     currentLibrary() {
       return this.$store.getters['libraries/getCurrentLibrary']
+    },
+    isScanning() {
+      return !!this.$store.getters['tasks/getRunningLibraryScanTask'](this.currentLibrary.id)
     },
     libraryName() {
       return this.currentLibrary ? this.currentLibrary.name : 'unknown'
@@ -184,6 +198,17 @@ export default {
     }
   },
   methods: {
+    scanBtnClick(force = false) {
+      this.$store
+        .dispatch('libraries/requestLibraryScan', { libraryId: this.currentLibrary.id, force })
+        .then(() => {
+          // this.$toast.success(this.$strings.ToastLibraryScanStarted)
+        })
+        .catch((error) => {
+          console.error('Failed to start scan', error)
+          this.$toast.error(this.$strings.ToastLibraryScanFailedToStart)
+        })
+    },
     requestBatchQuickEmbed() {
       const payload = {
         message: this.$strings.MessageConfirmQuickEmbed,
